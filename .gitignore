@@ -1,0 +1,39 @@
+# ---- 빌드 산출물 ----
+/build
+/export
+
+# ---- 오브젝트/의존성 파일 (와일드카드 * 추가: 확장자로 끝나는 모든 파일에 매칭) ----
+*.o
+*.d
+
+# ---- 로그 ----
+/logs
+*.log
+
+# ---- 락 파일 ----
+*.lock
+
+# ---- 바이너리/비트스트림 산출물 ----
+*.bin
+*.pdi
+.vitisWorkspace.json
+
+# ---- Vitis IDE 내부 캐시/로그 ----
+_ide/logs
+_ide/.wsdata
+
+# ---- Vitis HLS / Vivado 자동생성 프로젝트 폴더 ----
+*_prj/
+.Xil/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.gen/
+*.sim/
+*.runs/
+vivado*.jou
+vivado*.log
+vivado*.str
+
+# ---- OS 잡파일 (Windows) ----
+Thumbs.db
