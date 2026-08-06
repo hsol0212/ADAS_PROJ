@@ -39,9 +39,20 @@ KR260(Zynq UltraScale+) YOLOv3-tiny-ADAS CNN 가속기의 **convolution 엔진(V
 | C-synth | 자원(LUT/DSP/BRAM), achieved II, 예상 클럭 | `csynth_design` |
 | Co-sim | 실제 사이클 (before/after 비교) | `cosim_design` |
 
-- **Baseline (real layer 3, cosim 실측)**: `1,999,021 cycles` @200MHz
-- 목표는 특정 FPS 약속이 아니라, 각 단계 **실측으로 이득을 확인**하는 것.
-  HLS가 `DATAFLOW` 없이 서브루프를 안 겹칠 수 있어, 사이클 감소는 cosim으로 확인해야 함.
+### 측정 결과 (real layer 3, 2026-08-06)
+
+| 항목 | Before | After (v1) | 판정 |
+|---|---|---|---|
+| 정확성 (csim) | 기준 | 일치 | **bit-exact PASS** ✓ |
+| 사이클 (cosim) | 1,999,021 | 2,003,497 | +4,476 (**+0.22%**) — 이득 없음 |
+| LUT | 76.9% | 78.3% | 여유 (한도 100%) |
+| DSP / BRAM | 22% / 47% | 22% / 47% | 동일 |
+
+**결론**: 구현은 bit-exact로 정확하고 회로 자원도 여유가 있지만, **사이클은 줄지 않았다**(오히려 +0.22%).
+원인은 HLS 스케줄링 — `DATAFLOW` 지시 없이는 도구가 prefetch 읽기와 계산 서브루프를 **순차 실행**하므로
+오버랩이 일어나지 않고, 매 행의 phantom-column prefetch만 ~4.5k 사이클의 순수 오버헤드로 남는다.
+즉 **"수동 코드 재배치만으로는 오버랩 불가"가 실측으로 확인**됨. 진짜 오버랩은 ifmap read를 별도
+`DATAFLOW` 프로세스로 분리해야 하는데, `window`/`line_buf`의 컬럼 간 의존성 때문에 단순하지 않다(→ v2 후보).
 
 ## 빌드 / 실행
 
@@ -58,8 +69,12 @@ run_hls.bat cosim      :: + co-simulation (느림)
 > 합성 산출물(`conv_engine_prj/`)도 `.gitignore` 대상이며 `run_hls`가 재생성합니다.
 
 ## 상태
-- [x] baseline (csynth / cosim) 확보
+- [x] baseline 확보 — layer 3 = 1,999,021 cycles
 - [x] ping-pong prefetch 구현 (v1)
-- [ ] csim bit-exact 검증
-- [ ] csynth 자원/II 확인
-- [ ] cosim 사이클 비교 → 이득 측정
+- [x] csim bit-exact 검증 — **PASS** (ALL CONFIGS PASS, 0 errors)
+- [x] csynth 자원 확인 — LUT 78.3% (여유)
+- [x] cosim 사이클 비교 — 2,003,497 (이득 없음, +0.22%)
+- [ ] (다음 후보) v2: ifmap read를 `DATAFLOW` 별도 프로세스로 분리 — sliding-window 의존성 때문에 난이도 높음
+
+> **요약**: v1(수동 ping-pong 재배치)은 정확성·자원은 OK지만 사이클 이득 없음. HLS는 `DATAFLOW` 없이
+> 서브루프를 겹치지 않는다는 것을 실측으로 확인한 PoC. (가설 → 구현 → 검증 → 측정 → 결론)
