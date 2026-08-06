@@ -37,3 +37,5 @@ vivado*.str
 
 # ---- OS ì¡íŒŒì¼ (Windows) ----
 Thumbs.db
+# ---- COL_LOOP overlap: ´ë¿ë·® °ñµçµ¥ÀÌÅÍ (canonical python/real_layers.py·Î Àç»ı¼º) ----
+**/real_layers_data.h
